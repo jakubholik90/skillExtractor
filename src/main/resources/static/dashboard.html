@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SkillExtractor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/dashboard.html">SkillExtractor</a>
+        <div class="navbar-nav ms-auto">
+            <span class="navbar-text text-white me-3" id="usernameDisplay"></span>
+            <button class="btn btn-outline-light btn-sm" onclick="logout()">Logout</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>My Skills Dashboard</h2>
+            <hr>
+        </div>
+    </div>
+
+    <!-- Upload Project Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Upload New Project</h5>
+                </div>
+                <div class="card-body">
+                    <form id="uploadForm">
+                        <div class="mb-3">
+                            <label for="projectName" class="form-label">Project Name</label>
+                            <input type="text" class="form-control" id="projectName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="projectFiles" class="form-label">Select Project Files (max 20 files, 10MB)</label>
+                            <input type="file" class="form-control" id="projectFiles" multiple accept=".java,.xml,.properties" required>
+                            <small class="text-muted">Supported: .java, .xml, .properties</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload & Analyze</button>
+                    </form>
+                    <div id="uploadProgress" class="mt-3 d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="ms-2">Analyzing project...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skills by Category -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4>My Skills</h4>
+            <div id="skillsContainer">
+                <p class="text-muted">No skills extracted yet. Upload a project to get started!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects List -->
+    <div class="row">
+        <div class="col-12">
+            <h4>My Projects</h4>
+            <div id="projectsContainer">
+                <p class="text-muted">No projects uploaded yet.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quiz Modal -->
+<div class="modal fade" id="quizModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quizModalTitle">Skill Quiz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="quizContent">
+                <!-- Quiz questions will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>

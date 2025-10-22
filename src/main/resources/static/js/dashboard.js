@@ -1,0 +1,247 @@
+// dashboard.js - Dashboard functionality
+
+let currentSkills = [];
+let currentQuiz = null;
+let currentSkillId = null;
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    displayUsername();
+    loadProjects();
+    loadSkills();
+    setupUploadForm();
+});
+
+function displayUsername() {
+    const username = localStorage.getItem('username');
+    if (username) {
+        document.getElementById('usernameDisplay').textContent = `Welcome, ${username}`;
+    }
+}
+
+// Setup upload form
+function setupUploadForm() {
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await uploadProject();
+    });
+}
+
+// Upload and analyze project
+async function uploadProject() {
+    const projectName = document.getElementById('projectName').value;
+    const description = document.getElementById('description').value;
+    const filesInput = document.getElementById('projectFiles');
+    const files = filesInput.files;
+
+    if (files.length === 0) {
+        alert('Please select files');
+        return;
+    }
+
+    if (files.length > 20) {
+        alert('Maximum 20 files allowed');
+        return;
+    }
+
+    // Show progress
+    document.getElementById('uploadProgress').classList.remove('d-none');
+
+    try {
+        // Read all files
+        const fileDataPromises = Array.from(files).map(async (file) => {
+            const content = await readFileAsText(file);
+            return {
+                filename: file.name,
+                content: content,
+                extension: file.name.split('.').pop()
+            };
+        });
+
+        const fileData = await Promise.all(fileDataPromises);
+
+        // Upload to backend
+        const response = await apiCall('/projects/upload', 'POST', {
+            projectName,
+            description,
+            files: fileData
+        });
+
+        // Hide progress
+        document.getElementById('uploadProgress').classList.add('d-none');
+
+        if (response) {
+            alert('Project uploaded and analyzed successfully!');
+            document.getElementById('uploadForm').reset();
+            loadProjects();
+            loadSkills();
+        }
+    } catch (error) {
+        document.getElementById('uploadProgress').classList.add('d-none');
+        alert('Upload failed: ' + error.message);
+    }
+}
+
+// Load projects
+async function loadProjects() {
+    try {
+        const projects = await apiCall('/projects');
+        displayProjects(projects);
+    } catch (error) {
+        console.error('Failed to load projects:', error);
+    }
+}
+
+function displayProjects(projects) {
+    const container = document.getElementById('projectsContainer');
+
+    if (!projects || projects.length === 0) {
+        container.innerHTML = '<p class="text-muted">No projects uploaded yet.</p>';
+        return;
+    }
+
+    container.innerHTML = projects.map(project => `
+        <div class="card project-card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">${project.name}</h5>
+                <p class="card-text">${project.description || 'No description'}</p>
+                <small class="text-muted">
+                    Uploaded: ${formatDate(project.uploadedAt)} |
+                    Files: ${project.totalFiles} |
+                    Size: ${project.totalSizeKb} KB
+                </small>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Load skills
+async function loadSkills() {
+    try {
+        const skills = await apiCall('/skills');
+        currentSkills = skills;
+        displaySkills(skills);
+    } catch (error) {
+        console.error('Failed to load skills:', error);
+    }
+}
+
+function displaySkills(skills) {
+    const container = document.getElementById('skillsContainer');
+
+    if (!skills || skills.length === 0) {
+        container.innerHTML = '<p class="text-muted">No skills extracted yet. Upload a project to get started!</p>';
+        return;
+    }
+
+    // Group by category
+    const groupedSkills = skills.reduce((acc, skill) => {
+        if (!acc[skill.category]) {
+            acc[skill.category] = [];
+        }
+        acc[skill.category].push(skill);
+        return acc;
+    }, {});
+
+    container.innerHTML = Object.entries(groupedSkills).map(([category, categorySkills]) => `
+        <div class="category-section">
+            <div class="category-header">
+                <h5 class="mb-0">${categorySkills[0].categoryDisplayName}</h5>
+            </div>
+            <div class="row">
+                ${categorySkills.map(skill => `
+                    <div class="col-md-6 mb-3">
+                        <div class="card skill-card" onclick="openQuiz(${skill.id})">
+                            <div class="card-body">
+                                <h6 class="card-title">${skill.name}</h6>
+                                <p class="card-text small">${skill.description}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-primary badge-category">${skill.categoryDisplayName}</span>
+                                    <span class="skill-level ${getSkillLevelClass(skill.level)}">${skill.levelDisplay}</span>
+                                </div>
+                                <small class="text-muted d-block mt-2">From: ${skill.projectName}</small>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Open quiz modal
+async function openQuiz(skillId) {
+    currentSkillId = skillId;
+
+    try {
+        const quiz = await apiCall(`/quiz/generate/${skillId}`, 'POST');
+        currentQuiz = quiz;
+        displayQuiz(quiz);
+
+        const modal = new bootstrap.Modal(document.getElementById('quizModal'));
+        modal.show();
+    } catch (error) {
+        alert('Failed to generate quiz: ' + error.message);
+    }
+}
+
+function displayQuiz(quiz) {
+    document.getElementById('quizModalTitle').textContent = `Quiz: ${quiz.skillName}`;
+
+    const content = document.getElementById('quizContent');
+    content.innerHTML = `
+        <form id="quizForm">
+            ${quiz.questions.map(q => `
+                <div class="quiz-question">
+                    <p><strong>Question ${q.number}:</strong> ${q.text}</p>
+                    ${q.options.map((option, idx) => `
+                        <div class="quiz-option">
+                            <input type="radio" name="q${q.number}" value="${option.charAt(0)}" id="q${q.number}_${idx}" required>
+                            <label for="q${q.number}_${idx}">${option}</label>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('')}
+            <button type="submit" class="btn btn-primary">Submit Quiz</button>
+        </form>
+    `;
+
+    document.getElementById('quizForm').addEventListener('submit', submitQuiz);
+}
+
+async function submitQuiz(e) {
+    e.preventDefault();
+
+    const answers = currentQuiz.questions.map(q => ({
+        questionNumber: q.number,
+        selectedAnswer: document.querySelector(`input[name="q${q.number}"]:checked`).value
+    }));
+
+    try {
+        const result = await apiCall('/quiz/submit', 'POST', {
+            skillId: currentSkillId,
+            answers: answers
+        });
+
+        displayQuizResult(result);
+        loadSkills(); // Refresh skills to show updated level
+    } catch (error) {
+        alert('Failed to submit quiz: ' + error.message);
+    }
+}
+
+function displayQuizResult(result) {
+    const content = document.getElementById('quizContent');
+    const levelClass = getSkillLevelClass(result.achievedLevel);
+
+    content.innerHTML = `
+        <div class="quiz-result alert alert-info">
+            <h4>Quiz Complete!</h4>
+            <p class="mb-2"><strong>Score:</strong> ${result.score}%</p>
+            <p class="mb-2"><strong>Correct Answers:</strong> ${result.correctAnswers} / ${result.totalQuestions}</p>
+            <p class="mb-0"><strong>Skill Level:</strong> <span class="skill-level ${levelClass}">${result.levelDisplay}</span></p>
+            <button class="btn btn-primary mt-3" data-bs-dismiss="modal">Close</button>
+        </div>
+    `;
+}

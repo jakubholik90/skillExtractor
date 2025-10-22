@@ -1,0 +1,100 @@
+/* Custom styles for SkillExtractor */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+}
+
+/* Skill Cards */
+.skill-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.skill-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.skill-level {
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.level-unknown { color: #dc3545; }
+.level-basic { color: #ffc107; }
+.level-good { color: #28a745; }
+.level-expert { color: #007bff; }
+
+/* Category Sections */
+.category-section {
+    margin-bottom: 2rem;
+}
+
+.category-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Quiz Styles */
+.quiz-question {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+}
+
+.quiz-option {
+    margin: 0.5rem 0;
+    padding: 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quiz-option:hover {
+    background-color: #f8f9fa;
+    border-color: #007bff;
+}
+
+.quiz-option input[type="radio"] {
+    margin-right: 1rem;
+}
+
+.quiz-result {
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+/* Project Cards */
+.project-card {
+    border-left: 4px solid #007bff;
+}
+
+/* Loading States */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15rem;
+}
+
+/* Badges */
+.badge-category {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+}

@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: skillextractor-db
+    environment:
+      POSTGRES_DB: skillextractor
+      POSTGRES_USER: skillextractor
+      POSTGRES_PASSWORD: skillextractor123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - skillextractor-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skillextractor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Application
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: skillextractor-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://postgres:5432/skillextractor?user=skillextractor&password=skillextractor123
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - skillextractor-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  skillextractor-network:
+    driver: bridge
