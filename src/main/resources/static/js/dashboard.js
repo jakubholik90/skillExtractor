@@ -46,7 +46,9 @@ async function uploadProject() {
     }
 
     // Show progress
-    document.getElementById('uploadProgress').classList.remove('d-none');
+    const progressDiv = document.getElementById('uploadProgress');
+    progressDiv.classList.remove('d-none');
+    console.log('Starting upload...');
 
     try {
         // Read all files
@@ -60,6 +62,7 @@ async function uploadProject() {
         });
 
         const fileData = await Promise.all(fileDataPromises);
+        console.log(`Prepared ${fileData.length} files for upload`);
 
         // Upload to backend
         const response = await apiCall('/projects/upload', 'POST', {
@@ -69,24 +72,37 @@ async function uploadProject() {
         });
 
         // Hide progress
-        document.getElementById('uploadProgress').classList.add('d-none');
+        progressDiv.classList.add('d-none');
 
         if (response) {
+            console.log('Upload successful:', response);
             alert('Project uploaded and analyzed successfully!');
+
+            // Reset form
             document.getElementById('uploadForm').reset();
-            loadProjects();
-            loadSkills();
+
+            // ✅ CRITICAL: Reload both projects AND skills
+            console.log('Reloading projects and skills...');
+            await Promise.all([
+                loadProjects(),
+                loadSkills()
+            ]);
+
+            console.log('Projects and skills reloaded');
         }
     } catch (error) {
-        document.getElementById('uploadProgress').classList.add('d-none');
+        progressDiv.classList.add('d-none');
+        console.error('Upload failed:', error);
         alert('Upload failed: ' + error.message);
     }
 }
 
 // Load projects
 async function loadProjects() {
+    console.log('Loading projects...');
     try {
         const projects = await apiCall('/projects');
+        console.log('Received projects:', projects);
         displayProjects(projects);
     } catch (error) {
         console.error('Failed to load projects:', error);
@@ -97,29 +113,60 @@ function displayProjects(projects) {
     const container = document.getElementById('projectsContainer');
 
     if (!projects || projects.length === 0) {
+        console.log('No projects to display');
         container.innerHTML = '<p class="text-muted">No projects uploaded yet.</p>';
         return;
     }
 
+    console.log(`Displaying ${projects.length} projects`);
     container.innerHTML = projects.map(project => `
         <div class="card project-card mb-3">
             <div class="card-body">
-                <h5 class="card-title">${project.name}</h5>
-                <p class="card-text">${project.description || 'No description'}</p>
-                <small class="text-muted">
-                    Uploaded: ${formatDate(project.uploadedAt)} |
-                    Files: ${project.totalFiles} |
-                    Size: ${project.totalSizeKb} KB
-                </small>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title">${project.name}</h5>
+                        <p class="card-text">${project.description || 'No description'}</p>
+                        <small class="text-muted">
+                            Uploaded: ${formatDate(project.uploadedAt)} |
+                            Files: ${project.totalFiles} |
+                            Size: ${project.totalSizeKb} KB
+                        </small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProject(${project.id})">
+                        Delete
+                    </button>
+                </div>
             </div>
         </div>
     `).join('');
 }
 
+// Delete project
+async function deleteProject(projectId) {
+    if (!confirm('Are you sure you want to delete this project?')) {
+        return;
+    }
+
+    try {
+        await apiCall(`/projects/${projectId}`, 'DELETE');
+        alert('Project deleted successfully');
+
+        // Reload projects and skills
+        await Promise.all([
+            loadProjects(),
+            loadSkills()
+        ]);
+    } catch (error) {
+        alert('Failed to delete project: ' + error.message);
+    }
+}
+
 // Load skills
 async function loadSkills() {
+    console.log('Loading skills...');
     try {
         const skills = await apiCall('/skills');
+        console.log('Received skills:', skills);
         currentSkills = skills;
         displaySkills(skills);
     } catch (error) {
@@ -131,9 +178,12 @@ function displaySkills(skills) {
     const container = document.getElementById('skillsContainer');
 
     if (!skills || skills.length === 0) {
+        console.log('No skills to display');
         container.innerHTML = '<p class="text-muted">No skills extracted yet. Upload a project to get started!</p>';
         return;
     }
+
+    console.log(`Displaying ${skills.length} skills`);
 
     // Group by category
     const groupedSkills = skills.reduce((acc, skill) => {
@@ -173,15 +223,18 @@ function displaySkills(skills) {
 // Open quiz modal
 async function openQuiz(skillId) {
     currentSkillId = skillId;
+    console.log('Opening quiz for skill ID:', skillId);
 
     try {
         const quiz = await apiCall(`/quiz/generate/${skillId}`, 'POST');
+        console.log('Quiz generated:', quiz);
         currentQuiz = quiz;
         displayQuiz(quiz);
 
         const modal = new bootstrap.Modal(document.getElementById('quizModal'));
         modal.show();
     } catch (error) {
+        console.error('Quiz generation failed:', error);
         alert('Failed to generate quiz: ' + error.message);
     }
 }
@@ -212,6 +265,7 @@ function displayQuiz(quiz) {
 
 async function submitQuiz(e) {
     e.preventDefault();
+    console.log('Submitting quiz for skill ID:', currentSkillId);
 
     const answers = currentQuiz.questions.map(q => ({
         questionNumber: q.number,
@@ -224,9 +278,11 @@ async function submitQuiz(e) {
             answers: answers
         });
 
+        console.log('Quiz result:', result);
         displayQuizResult(result);
         loadSkills(); // Refresh skills to show updated level
     } catch (error) {
+        console.error('Quiz submission failed:', error);
         alert('Failed to submit quiz: ' + error.message);
     }
 }

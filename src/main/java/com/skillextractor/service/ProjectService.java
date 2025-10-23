@@ -53,14 +53,24 @@ public class ProjectService {
                 .user(user)
                 .build();
 
-        return projectRepository.save(project);
+        // ✅ Save project BEFORE returning
+        project = projectRepository.save(project);
+
+        log.info("Project saved with ID: {} for user: {}", project.getId(), username);
+
+        return project;
     }
 
+    @Transactional(readOnly = true)
     public List<Project> getUserProjects(String username) {
         User user = userService.getUserByUsername(username);
-        return projectRepository.findByUserIdOrderByUploadedAtDesc(user.getId());
+        log.info("Fetching projects for user ID: {}", user.getId());
+        List<Project> projects = projectRepository.findByUserIdOrderByUploadedAtDesc(user.getId());
+        log.info("Found {} projects for user: {}", projects.size(), username);
+        return projects;
     }
 
+    @Transactional(readOnly = true)
     public Project getProjectById(Long projectId) {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
@@ -75,6 +85,7 @@ public class ProjectService {
             throw new RuntimeException("Unauthorized to delete this project");
         }
 
+        log.info("Deleting project ID: {} for user: {}", projectId, username);
         projectRepository.delete(project);
     }
 
