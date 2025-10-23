@@ -81,7 +81,7 @@ async function uploadProject() {
             // Reset form
             document.getElementById('uploadForm').reset();
 
-            // ✅ CRITICAL: Reload both projects AND skills
+            // ✅ Reload both projects AND skills
             console.log('Reloading projects and skills...');
             await Promise.all([
                 loadProjects(),
@@ -120,19 +120,19 @@ function displayProjects(projects) {
 
     console.log(`Displaying ${projects.length} projects`);
     container.innerHTML = projects.map(project => `
-        <div class="card project-card mb-3">
+        <div class="card project-card mb-3" id="project-${project.id}">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h5 class="card-title">${project.name}</h5>
-                        <p class="card-text">${project.description || 'No description'}</p>
+                        <h5 class="card-title">${escapeHtml(project.name)}</h5>
+                        <p class="card-text">${escapeHtml(project.description || 'No description')}</p>
                         <small class="text-muted">
                             Uploaded: ${formatDate(project.uploadedAt)} |
                             Files: ${project.totalFiles} |
                             Size: ${project.totalSizeKb} KB
                         </small>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProject(${project.id})">
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProject(${project.id})" id="delete-btn-${project.id}">
                         Delete
                     </button>
                 </div>
@@ -141,23 +141,47 @@ function displayProjects(projects) {
     `).join('');
 }
 
-// Delete project
+// ✅ Delete project function
 async function deleteProject(projectId) {
-    if (!confirm('Are you sure you want to delete this project?')) {
+    console.log('Delete project requested:', projectId);
+
+    if (!confirm('Are you sure you want to delete this project? All associated skills will also be deleted.')) {
+        console.log('Delete cancelled by user');
         return;
     }
 
+    // Disable delete button and show loading
+    const deleteBtn = document.getElementById(`delete-btn-${projectId}`);
+    if (deleteBtn) {
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = 'Deleting...';
+    }
+
     try {
-        await apiCall(`/projects/${projectId}`, 'DELETE');
-        alert('Project deleted successfully');
+        console.log(`Calling DELETE /api/projects/${projectId}`);
+        const response = await apiCall(`/projects/${projectId}`, 'DELETE');
+        console.log('Delete response:', response);
+
+        // Show success message
+        alert('Project deleted successfully!');
 
         // Reload projects and skills
+        console.log('Reloading projects and skills after delete...');
         await Promise.all([
             loadProjects(),
             loadSkills()
         ]);
+
+        console.log('Projects and skills reloaded after delete');
     } catch (error) {
+        console.error('Failed to delete project:', error);
         alert('Failed to delete project: ' + error.message);
+
+        // Re-enable button on error
+        if (deleteBtn) {
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = 'Delete';
+        }
     }
 }
 
@@ -197,20 +221,20 @@ function displaySkills(skills) {
     container.innerHTML = Object.entries(groupedSkills).map(([category, categorySkills]) => `
         <div class="category-section">
             <div class="category-header">
-                <h5 class="mb-0">${categorySkills[0].categoryDisplayName}</h5>
+                <h5 class="mb-0">${escapeHtml(categorySkills[0].categoryDisplayName)}</h5>
             </div>
             <div class="row">
                 ${categorySkills.map(skill => `
                     <div class="col-md-6 mb-3">
                         <div class="card skill-card" onclick="openQuiz(${skill.id})">
                             <div class="card-body">
-                                <h6 class="card-title">${skill.name}</h6>
-                                <p class="card-text small">${skill.description}</p>
+                                <h6 class="card-title">${escapeHtml(skill.name)}</h6>
+                                <p class="card-text small">${escapeHtml(skill.description)}</p>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-primary badge-category">${skill.categoryDisplayName}</span>
+                                    <span class="badge bg-primary badge-category">${escapeHtml(skill.categoryDisplayName)}</span>
                                     <span class="skill-level ${getSkillLevelClass(skill.level)}">${skill.levelDisplay}</span>
                                 </div>
-                                <small class="text-muted d-block mt-2">From: ${skill.projectName}</small>
+                                <small class="text-muted d-block mt-2">From: ${escapeHtml(skill.projectName)}</small>
                             </div>
                         </div>
                     </div>
@@ -247,11 +271,11 @@ function displayQuiz(quiz) {
         <form id="quizForm">
             ${quiz.questions.map(q => `
                 <div class="quiz-question">
-                    <p><strong>Question ${q.number}:</strong> ${q.text}</p>
+                    <p><strong>Question ${q.number}:</strong> ${escapeHtml(q.text)}</p>
                     ${q.options.map((option, idx) => `
                         <div class="quiz-option">
                             <input type="radio" name="q${q.number}" value="${option.charAt(0)}" id="q${q.number}_${idx}" required>
-                            <label for="q${q.number}_${idx}">${option}</label>
+                            <label for="q${q.number}_${idx}">${escapeHtml(option)}</label>
                         </div>
                     `).join('')}
                 </div>
@@ -300,4 +324,17 @@ function displayQuizResult(result) {
             <button class="btn btn-primary mt-3" data-bs-dismiss="modal">Close</button>
         </div>
     `;
+}
+
+// ✅ Utility function to escape HTML and prevent XSS
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
 }

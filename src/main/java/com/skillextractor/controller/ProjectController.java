@@ -1,4 +1,4 @@
-// ProjectController.java
+// ProjectController.java - With improved DELETE handling
 package com.skillextractor.controller;
 
 import com.skillextractor.dto.ProjectUploadRequest;
@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -43,19 +44,20 @@ public class ProjectController {
                     request, project, username);
             log.info("Extracted {} skills from project", skills.size());
 
-            // ✅ Return both project info and skills
+            // Build response
             Map<String, Object> response = new HashMap<>();
             response.put("project", Map.of(
                     "id", project.getId(),
                     "name", project.getName(),
                     "description", project.getDescription() != null ? project.getDescription() : "",
                     "totalFiles", project.getTotalFiles(),
-                    "uploadedAt", project.getUploadedAt()
+                    "uploadedAt", project.getUploadedAt().toString()
             ));
             response.put("skills", skills);
             response.put("message", "Project uploaded and analyzed successfully");
 
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             log.error("Error uploading project", e);
             throw new RuntimeException("Failed to upload project: " + e.getMessage());
@@ -63,29 +65,49 @@ public class ProjectController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Project>> getUserProjects(Authentication authentication) {
         String username = authentication.getName();
         log.info("Fetching projects for user: {}", username);
+
         List<Project> projects = projectService.getUserProjects(username);
         log.info("Returning {} projects", projects.size());
+
         return ResponseEntity.ok(projects);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Project> getProject(@PathVariable Long id) {
+    @Transactional(readOnly = true)
+    public ResponseEntity<Project> getProject(@PathVariable Long id, Authentication authentication) {
+        String username = authentication.getName();
+        log.info("GET project ID: {} by user: {}", id, username);
+
         Project project = projectService.getProjectById(id);
         return ResponseEntity.ok(project);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteProject(
+    public ResponseEntity<Map<String, String>> deleteProject(
             @PathVariable Long id,
             Authentication authentication) {
 
         String username = authentication.getName();
-        projectService.deleteProject(id, username);
-        return ResponseEntity.ok("Project deleted successfully");
+        log.info("DELETE request - Project ID: {}, User: {}", id, username);
+
+        try {
+            projectService.deleteProject(id, username);
+            log.info("Project {} deleted successfully by user: {}", id, username);
+
+            // Return JSON response instead of plain string
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Project deleted successfully");
+            response.put("projectId", id.toString());
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            log.error("Failed to delete project {}: {}", id, e.getMessage());
+            throw e;
+        }
     }
 }
-
-// ============================================
