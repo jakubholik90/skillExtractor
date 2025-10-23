@@ -1,9 +1,7 @@
-// UserService.java - UPDATED VERSION
 package com.skillextractor.service;
 
 import com.skillextractor.dto.AuthResponse;
 import com.skillextractor.dto.UserRegistrationRequest;
-import com.skillextractor.exception.*;
 import com.skillextractor.model.User;
 import com.skillextractor.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,10 +24,10 @@ public class UserService {
 
         // Validation
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new UserAlreadyExistsException("username", request.getUsername());
+            throw new RuntimeException("Username already exists");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new UserAlreadyExistsException("email", request.getEmail());
+            throw new RuntimeException("Email already exists");
         }
 
         // Create user
@@ -51,13 +49,11 @@ public class UserService {
 
     public User getUserByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
     }
 
     public User getUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id));
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 }
-
-// ============================================

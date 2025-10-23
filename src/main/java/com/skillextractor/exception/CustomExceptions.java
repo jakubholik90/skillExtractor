@@ -5,7 +5,7 @@ package com.skillextractor.exception;
  */
 
 // Base exception
-public class SkillExtractorException extends RuntimeException {
+class SkillExtractorException extends RuntimeException {
     public SkillExtractorException(String message) {
         super(message);
     }

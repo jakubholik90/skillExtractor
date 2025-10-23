@@ -1,9 +1,7 @@
-
-// ProjectService.java - UPDATED VERSION
+// ProjectService.java
 package com.skillextractor.service;
 
 import com.skillextractor.dto.ProjectUploadRequest;
-import com.skillextractor.exception.*;
 import com.skillextractor.model.Project;
 import com.skillextractor.model.User;
 import com.skillextractor.repository.ProjectRepository;
@@ -65,7 +63,7 @@ public class ProjectService {
 
     public Project getProjectById(Long projectId) {
         return projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(projectId));
+                .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
     }
 
     @Transactional
@@ -74,7 +72,7 @@ public class ProjectService {
         User user = userService.getUserByUsername(username);
 
         if (!project.getUser().getId().equals(user.getId())) {
-            throw new UnauthorizedAccessException("project " + projectId);
+            throw new RuntimeException("Unauthorized to delete this project");
         }
 
         projectRepository.delete(project);
@@ -82,18 +80,18 @@ public class ProjectService {
 
     private void validateProjectUpload(ProjectUploadRequest request) {
         if (request.getFiles() == null || request.getFiles().isEmpty()) {
-            throw new InvalidRequestException("No files provided");
+            throw new RuntimeException("No files provided");
         }
 
         if (request.getFiles().size() > maxFiles) {
-            throw new FileCountLimitExceededException(maxFiles);
+            throw new RuntimeException("Maximum " + maxFiles + " files allowed");
         }
 
         long totalSize = calculateTotalSize(request.getFiles());
         long maxSizeBytes = maxSizeMb * 1024 * 1024;
 
         if (totalSize > maxSizeBytes) {
-            throw new FileSizeLimitExceededException(maxSizeMb);
+            throw new RuntimeException("Total file size exceeds " + maxSizeMb + "MB");
         }
     }
 
@@ -105,4 +103,3 @@ public class ProjectService {
 }
 
 // ============================================
-
