@@ -16,6 +16,7 @@
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Usage](#usage)
+- [Common Issues & Solutions](#common-issues--solutions)
 - [API Documentation](#api-documentation)
 - [Deployment](#deployment)
 - [Contributing](#contributing)
@@ -43,14 +44,15 @@ SkillExtractor helps developers:
 ## ✨ Features
 
 ### MVP (v1.0)
-- ✅ User registration and authentication
+- ✅ User registration and authentication (Basic Auth + Custom UserDetailsService)
 - ✅ Java project upload and validation
 - ✅ AI-powered skill extraction (15 predefined categories)
 - ✅ Automated quiz generation for each skill
 - ✅ Skill level assessment (Unknown → Basic → Good → Expert)
-- ✅ Personal skill dashboard
-- ✅ Project metadata storage
+- ✅ Personal skill dashboard with real-time updates
+- ✅ Project management (upload, list, delete)
 - ✅ Response caching to optimize API usage
+- ✅ JSON serialization protection (@JsonIgnore patterns)
 
 ### Upcoming Features
 - 🔜 Python project support
@@ -66,19 +68,26 @@ SkillExtractor helps developers:
 
 ### Backend
 - **Java 17** with **Spring Boot 3.2**
-- **Spring Security** (Basic Auth)
+- **Spring Security** (Basic Auth + Custom UserDetailsService)
 - **Spring Data JPA** + Hibernate
 - **PostgreSQL 15**
 - **OpenAI Java SDK**
 - **Caffeine Cache**
 
+### Key Patterns & Solutions
+- `@JsonIgnore` for preventing infinite recursion (User ↔ Project ↔ Skill)
+- `@Transactional(readOnly = true)` for LazyInitializationException prevention
+- Custom `@Query` annotations for complex JPA queries
+- XSS protection with HTML escaping
+
 ### Frontend
 - **HTML5 + CSS3 + Bootstrap 5**
 - **Vanilla JavaScript** (Fetch API)
+- Real-time dashboard updates
 
 ### Deployment
-- **Railway.app** (Backend + Database)
-- **GitHub** (CI/CD integration)
+- **Local Development** (PostgreSQL + Maven)
+- **Railway.app** (Production - optional)
 
 ---
 
@@ -87,178 +96,68 @@ SkillExtractor helps developers:
 ```
 skillextractor/
 │
-├── docs/                                    # Documentation
-│   ├── FUNCTIONALITIES.md                   # Feature specifications
-│   ├── STACK.md                             # Technology stack details
-│   ├── DEPLOYMENT.md                        # Deployment guide
-│   └── API.md                               # API documentation
-│
 ├── src/
 │   ├── main/
 │   │   ├── java/com/skillextractor/
-│   │   │   ├── SkillExtractorApplication.java    # Main application class
+│   │   │   ├── SkillExtractorApplication.java
 │   │   │   │
-│   │   │   ├── config/                           # Configuration classes
-│   │   │   │   ├── SecurityConfig.java           # Spring Security setup
-│   │   │   │   ├── CacheConfig.java              # Caffeine cache config
-│   │   │   │   └── OpenAIConfig.java             # OpenAI API client
+│   │   │   ├── config/
+│   │   │   │   ├── SecurityConfig.java            # Spring Security + UserDetailsService
+│   │   │   │   ├── CacheConfig.java               # Caffeine cache
+│   │   │   │   └── OpenAIConfig.java              # OpenAI client
 │   │   │   │
-│   │   │   ├── controller/                       # REST Controllers
-│   │   │   │   ├── AuthController.java           # Registration/Login
-│   │   │   │   ├── ProjectController.java        # Project management
-│   │   │   │   ├── SkillController.java          # Skill retrieval
-│   │   │   │   └── QuizController.java           # Quiz generation/submission
+│   │   │   ├── controller/
+│   │   │   │   ├── AuthController.java            # Registration/Login
+│   │   │   │   ├── ProjectController.java         # CRUD operations (@Transactional)
+│   │   │   │   ├── SkillController.java           # Skill retrieval
+│   │   │   │   └── QuizController.java            # Quiz generation/submission
 │   │   │   │
-│   │   │   ├── service/                          # Business logic
-│   │   │   │   ├── UserService.java              # User management
-│   │   │   │   ├── ProjectService.java           # Project operations
-│   │   │   │   ├── SkillAnalysisService.java     # AI-powered analysis
-│   │   │   │   ├── OpenAIService.java            # OpenAI API integration
-│   │   │   │   └── QuizService.java              # Quiz logic
+│   │   │   ├── service/
+│   │   │   │   ├── UserService.java               # User management
+│   │   │   │   ├── CustomUserDetailsService.java  # ⭐ NEW: Spring Security integration
+│   │   │   │   ├── ProjectService.java            # Project operations
+│   │   │   │   ├── SkillAnalysisService.java      # AI-powered analysis
+│   │   │   │   ├── OpenAIService.java             # OpenAI API integration
+│   │   │   │   └── QuizService.java               # Quiz logic
 │   │   │   │
-│   │   │   ├── repository/                       # JPA Repositories
+│   │   │   ├── repository/
 │   │   │   │   ├── UserRepository.java
-│   │   │   │   ├── ProjectRepository.java
+│   │   │   │   ├── ProjectRepository.java         # Custom @Query methods
 │   │   │   │   ├── SkillRepository.java
 │   │   │   │   └── QuizResultRepository.java
 │   │   │   │
-│   │   │   ├── model/                            # Entity classes
-│   │   │   │   ├── User.java
-│   │   │   │   ├── Project.java
+│   │   │   ├── model/
+│   │   │   │   ├── User.java                      # @JsonIgnore for security
+│   │   │   │   ├── Project.java                   # @JsonIgnore for circular refs
 │   │   │   │   ├── Skill.java
 │   │   │   │   └── QuizResult.java
 │   │   │   │
-│   │   │   ├── dto/                              # Data Transfer Objects
-│   │   │   │   ├── ProjectUploadRequest.java
-│   │   │   │   ├── SkillResponse.java
-│   │   │   │   ├── QuizRequest.java
-│   │   │   │   ├── QuizResponse.java
-│   │   │   │   ├── QuizResultResponse.java
-│   │   │   │   ├── UserRegistrationRequest.java
-│   │   │   │   └── AuthResponse.java
-│   │   │   │
-│   │   │   ├── enums/                            # Enumerations
-│   │   │   │   ├── SkillCategory.java            # 15 predefined categories
-│   │   │   │   └── SkillLevel.java               # 4 proficiency levels
-│   │   │   │
-│   │   │   └── exception/                        # Exception handling
-│   │   │       ├── GlobalExceptionHandler.java   # Global error handler
-│   │   │       └── CustomExceptions.java         # Custom exception classes
+│   │   │   ├── dto/                               # 7 DTOs
+│   │   │   ├── enums/                             # SkillCategory, SkillLevel
+│   │   │   └── exception/                         # Global exception handling
 │   │   │
 │   │   └── resources/
-│   │       ├── application.properties            # Main configuration
-│   │       ├── application-dev.properties        # Development config
-│   │       ├── application-prod.properties       # Production config
+│   │       ├── application.properties
+│   │       ├── application-dev.properties
+│   │       ├── application-prod.properties
 │   │       │
-│   │       └── static/                           # Frontend files
-│   │           ├── index.html                    # Landing page
-│   │           ├── login.html                    # Login page
-│   │           ├── register.html                 # Registration page
-│   │           ├── dashboard.html                # User dashboard
-│   │           │
-│   │           ├── css/
-│   │           │   └── style.css                 # Custom styles
-│   │           │
+│   │       └── static/
+│   │           ├── index.html
+│   │           ├── login.html
+│   │           ├── register.html
+│   │           ├── dashboard.html                 # Real-time updates
+│   │           ├── css/style.css
 │   │           └── js/
-│   │               ├── app.js                    # Common utilities
-│   │               └── dashboard.js              # Dashboard logic
-│   │
-│   └── test/                                     # Tests (optional)
-│       └── java/com/skillextractor/
+│   │               ├── app.js
+│   │               └── dashboard.js               # Delete + auto-refresh
 │
-├── pom.xml                                       # Maven dependencies
-├── Dockerfile                                    # Docker configuration
-├── docker-compose.yml                            # Docker Compose setup
-├── .gitignore                                    # Git ignore rules
-└── README.md                                     # This file
+├── pom.xml
+├── Dockerfile
+├── docker-compose.yml
+└── README.md
+
+**Total: 48+ files** (including CustomUserDetailsService)
 ```
-
----
-
-## 📦 Complete File List
-
-### Documentation (5 files)
-- `README.md`
-- `FUNCTIONALITIES.md`
-- `STACK.md`
-- `DEPLOYMENT.md`
-- `docs/API.md`
-
-### Configuration (6 files)
-- `pom.xml`
-- `Dockerfile`
-- `docker-compose.yml`
-- `.gitignore`
-- `src/main/resources/application.properties`
-- `src/main/resources/application-dev.properties`
-- `src/main/resources/application-prod.properties`
-
-### Backend Java (29 files)
-**Main Application:**
-- `SkillExtractorApplication.java`
-
-**Config (3 files):**
-- `SecurityConfig.java`
-- `CacheConfig.java`
-- `OpenAIConfig.java`
-
-**Controllers (4 files):**
-- `AuthController.java`
-- `ProjectController.java`
-- `SkillController.java`
-- `QuizController.java`
-
-**Services (5 files):**
-- `UserService.java`
-- `ProjectService.java`
-- `SkillAnalysisService.java`
-- `OpenAIService.java`
-- `QuizService.java`
-
-**Repositories (4 files):**
-- `UserRepository.java`
-- `ProjectRepository.java`
-- `SkillRepository.java`
-- `QuizResultRepository.java`
-
-**Models (4 files):**
-- `User.java`
-- `Project.java`
-- `Skill.java`
-- `QuizResult.java`
-
-**DTOs (7 files):**
-- `ProjectUploadRequest.java`
-- `SkillResponse.java`
-- `QuizRequest.java`
-- `QuizResponse.java`
-- `QuizResultResponse.java`
-- `UserRegistrationRequest.java`
-- `AuthResponse.java`
-
-**Enums (2 files):**
-- `SkillCategory.java`
-- `SkillLevel.java`
-
-**Exceptions (2 files):**
-- `GlobalExceptionHandler.java`
-- `CustomExceptions.java`
-
-### Frontend (7 files)
-**HTML (4 files):**
-- `index.html`
-- `login.html`
-- `register.html`
-- `dashboard.html`
-
-**CSS (1 file):**
-- `style.css`
-
-**JavaScript (2 files):**
-- `app.js`
-- `dashboard.js`
-
-**Total: 47 files created**
 
 ---
 
@@ -272,60 +171,60 @@ skillextractor/
 
 ### Installation
 
-1. **Clone the repository**
+#### 1. Clone the repository
 ```bash
 git clone https://github.com/yourusername/skillextractor.git
 cd skillextractor
 ```
 
-2. **Configure database** (application.properties)
+#### 2. Setup PostgreSQL
+```sql
+CREATE DATABASE skillextractor;
+CREATE USER skillextractor_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE skillextractor TO skillextractor_user;
+```
+
+#### 3. Configure application
+Edit `src/main/resources/application.properties`:
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/skillextractor
 spring.datasource.username=your_username
 spring.datasource.password=your_password
+
+# OpenAI API Key
+openai.api.key=${OPENAI_API_KEY}
 ```
 
-3. **Set OpenAI API Key**
+#### 4. Set OpenAI API Key
 ```bash
 export OPENAI_API_KEY=your_openai_api_key
 ```
 Or add to `application-dev.properties`:
 ```properties
-openai.api.key=${OPENAI_API_KEY}
+openai.api.key=sk-your-key-here
 ```
 
-4. **Build and run**
+#### 5. Build and run
 ```bash
-cd backend
 mvn clean install
 mvn spring-boot:run
 ```
 
-5. **Access the application**
+#### 6. Access the application
 - Frontend: `http://localhost:8080`
 - API: `http://localhost:8080/api`
 
 ### Using Docker Compose (Alternative)
 
 ```bash
-# 1. Clone repository
-git clone https://github.com/yourusername/skillextractor.git
-cd skillextractor
-
-# 2. Set environment variable
+# 1. Set environment variable
 export OPENAI_API_KEY=your_openai_api_key
 
-# 3. Run with Docker Compose
+# 2. Run with Docker Compose
 docker-compose up --build
 
-# 4. Access application
+# 3. Access application
 http://localhost:8080
-
-# Stop containers
-docker-compose down
-
-# Stop and remove volumes
-docker-compose down -v
 ```
 
 ---
@@ -342,12 +241,12 @@ Navigate to `/register` and create your account.
 - Max: 20 files, 10MB total
 
 ### 3. View Extracted Skills
-Skills are automatically extracted and categorized:
-- **Syntax Basics** (loops, conditionals)
-- **OOP** (inheritance, polymorphism)
-- **Collections** (List, Map, Set)
-- **Frameworks** (Spring, Hibernate)
-- And 11 more categories...
+Skills are automatically extracted and categorized into 15 categories:
+- **Syntax Basics**, **OOP**, **Collections**, **Streams & Lambdas**
+- **Exception Handling**, **File Handling**, **Database**
+- **Frameworks**, **Clean Code**, **Algorithms**
+- **Testing**, **Build Tools**, **Design Patterns**
+- **Concurrency**, **REST API**
 
 ### 4. Take Quiz
 - Click on any skill to generate a quiz
@@ -357,6 +256,77 @@ Skills are automatically extracted and categorized:
     - 🟨 **Basic** (41-60%)
     - 🟩 **Good** (61-85%)
     - 🟦 **Expert** (86-100%)
+
+### 5. Manage Projects
+- **View** all your projects in the dashboard
+- **Delete** projects (with cascade delete of skills)
+- **Track** skill progression across projects
+
+---
+
+## 🐛 Common Issues & Solutions
+
+### Issue 1: "Unable to locate Attribute [userId]"
+**Problem:** JPA query method name doesn't match entity structure.
+
+**Solution:** Use `@Query` annotation:
+```java
+@Query("SELECT p FROM Project p WHERE p.user.id = :userId")
+List<Project> findByUserId(@Param("userId") Long userId);
+```
+
+### Issue 2: "LazyInitializationException"
+**Problem:** Hibernate tries to load relationships outside session.
+
+**Solution:** Add `@Transactional(readOnly = true)`:
+```java
+@GetMapping
+@Transactional(readOnly = true)
+public ResponseEntity<List<Project>> getUserProjects() { ... }
+```
+
+### Issue 3: JSON Infinite Recursion (User ↔ Project)
+**Problem:** Jackson tries to serialize circular references.
+
+**Solution:** Add `@JsonIgnore` to relationships:
+```java
+@Entity
+public class Project {
+    @ManyToOne
+    @JsonIgnore  // Prevent recursion
+    private User user;
+}
+```
+
+### Issue 4: Projects visible in API but not in frontend
+**Problem:** Frontend doesn't refresh after operations.
+
+**Solution:** Call `loadProjects()` after upload/delete:
+```javascript
+await Promise.all([loadProjects(), loadSkills()]);
+```
+
+### Issue 5: "httpBasic() is deprecated"
+**Problem:** Using old Spring Security 5.x syntax.
+
+**Solution:** Update to Spring Security 6.x:
+```java
+.httpBasic(Customizer.withDefaults())  // New syntax
+```
+
+### Issue 6: Delete button doesn't work
+**Problem:** Function not globally accessible or wrong onclick.
+
+**Solution:** Ensure `deleteProject()` is outside `DOMContentLoaded`:
+```javascript
+// Global function
+async function deleteProject(projectId) { ... }
+```
+
+**For more troubleshooting, see:**
+- `DIAGNOSTIC_GUIDE.md` - Complete diagnostic steps
+- `FRONTEND_FIX_COMPLETE.md` - Frontend issues
+- `DELETE_FIX_GUIDE.md` - Delete functionality
 
 ---
 
@@ -372,53 +342,49 @@ Authorization: Basic base64(username:password)
 
 #### Projects
 ```http
-POST /api/projects/upload          # Upload new project
-GET  /api/projects                 # List user's projects
-GET  /api/projects/{id}            # Get project details
-DELETE /api/projects/{id}          # Delete project
+POST   /api/projects/upload          # Upload new project
+GET    /api/projects                 # List user's projects
+GET    /api/projects/{id}            # Get project details
+DELETE /api/projects/{id}            # Delete project
 ```
 
 #### Skills
 ```http
-GET  /api/skills                   # List all user skills
-GET  /api/skills/category/{cat}    # Skills by category
-GET  /api/skills/{id}              # Skill details
+GET    /api/skills                   # List all user skills
+GET    /api/skills/category/{cat}    # Skills by category
+GET    /api/skills/{id}              # Skill details
 ```
 
 #### Quizzes
 ```http
-POST /api/quiz/generate/{skillId}  # Generate quiz for skill
-POST /api/quiz/submit              # Submit quiz answers
-GET  /api/quiz/results/{skillId}   # Get latest quiz result
+POST   /api/quiz/generate/{skillId}  # Generate quiz
+POST   /api/quiz/submit              # Submit answers
+GET    /api/quiz/results/{skillId}   # Get latest result
 ```
 
-Full API documentation: [API.md](docs/API.md)
+Full API documentation: [docs/API.md](docs/API.md)
 
 ---
 
-## 🌐 Deployment (Railway.app)
+## 🌐 Deployment
 
-### 1. Prepare for Deployment
+### Local Development
 ```bash
-# Create Dockerfile in project root
-FROM openjdk:17-jdk-slim
-COPY backend/target/*.jar app.jar
-ENTRYPOINT ["java","-jar","/app.jar"]
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-### 2. Configure Railway
-1. Connect GitHub repository to Railway
-2. Add PostgreSQL database (Railway provides free tier)
-3. Set environment variables:
+### Railway.app (Production)
+
+1. **Connect GitHub repository** to Railway
+2. **Add PostgreSQL database** (Railway provides free tier)
+3. **Set environment variables:**
     - `OPENAI_API_KEY`
     - `SPRING_PROFILES_ACTIVE=prod`
+4. **Deploy** - Railway auto-builds and deploys
 
-### 3. Deploy
-```bash
-git push origin main  # Auto-deploys to Railway
-```
+Railway provides a public URL: `https://your-app.railway.app`
 
-Railway will provide a public URL: `https://your-app.railway.app`
+**Deployment guide:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 ---
 
@@ -445,8 +411,10 @@ Created as a learning project to practice:
 - Java & Spring Boot development
 - REST API design
 - OpenAI API integration
-- Database modeling
-- Full-stack development
+- Database modeling with proper JPA patterns
+- Spring Security with custom authentication
+- Full-stack development with real-time updates
+- JSON serialization best practices
 
 ---
 
@@ -455,7 +423,47 @@ Created as a learning project to practice:
 - [OpenAI](https://openai.com/) for GPT API
 - [Railway.app](https://railway.app/) for hosting
 - [Spring Boot](https://spring.io/) for excellent framework
+- Community for troubleshooting and best practices
+
+---
+
+## 📚 Additional Resources
+
+### Documentation
+- [FUNCTIONALITIES.md](docs/FUNCTIONALITIES.md) - Feature specifications
+- [STACK.md](docs/STACK.md) - Technology stack details
+- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment guide
+- [API.md](docs/API.md) - API documentation
+
+### Troubleshooting Guides
+- `DIAGNOSTIC_GUIDE.md` - Step-by-step diagnostics
+- `FRONTEND_FIX_COMPLETE.md` - Frontend JSON issues
+- `DELETE_FIX_GUIDE.md` - Delete functionality
+- `REPOSITORY_FIX.md` - JPA query problems
+
+### Debug Tools
+- `DebugController.java` - Diagnostic endpoints (temporary)
+- `test-api.html` - Frontend API tester
+
+---
+
+## 🔄 Recent Updates
+
+### Version 1.0.1 (Current)
+- ✅ Added `CustomUserDetailsService` for Spring Security
+- ✅ Fixed JSON infinite recursion with `@JsonIgnore`
+- ✅ Fixed `LazyInitializationException` with `@Transactional`
+- ✅ Updated to Spring Security 6.x syntax (`Customizer.withDefaults()`)
+- ✅ Fixed JPA queries with `@Query` annotations
+- ✅ Added real-time dashboard updates
+- ✅ Improved delete functionality with proper cascade
+- ✅ Added XSS protection with HTML escaping
+- ✅ Enhanced error logging and debugging
 
 ---
 
 **⭐ Star this repo if you find it helpful!**
+
+**💬 Questions? Open an issue!**
+
+**🐛 Found a bug? Check troubleshooting guides first!**
