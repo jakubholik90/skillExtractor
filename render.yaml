@@ -1,0 +1,31 @@
+services:
+  # Spring Boot Application
+  - type: web
+    name: skillextractor
+    env: java
+    plan: free
+    region: frankfurt  # Closest to Berlin
+    buildCommand: mvn clean install -DskipTests
+    startCommand: java -Xmx450m -jar target/skillextractor-1.0.0.jar
+    healthCheckPath: /
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: "-Xmx450m -Xms256m"
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: PORT
+        value: 8080
+      - key: OPENAI_API_KEY
+        sync: false  # Set manually in dashboard
+      - key: DATABASE_URL
+        fromDatabase:
+          name: skillextractor-db
+          property: connectionString
+
+databases:
+  # PostgreSQL Database
+  - name: skillextractor-db
+    databaseName: skillextractor
+    user: skillextractor
+    plan: free
+    region: frankfurt

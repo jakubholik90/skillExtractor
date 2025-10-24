@@ -1,0 +1,42 @@
+# Render.com ignore file - speeds up deployment
+
+# IDE files
+.idea/
+*.iml
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+# Build artifacts (will be rebuilt on Render)
+target/
+*.class
+
+# Local config
+application-local.properties
+application-dev.properties
+application.properties
+
+# Git
+.git/
+.gitignore
+
+# Documentation (not needed for runtime)
+docs/
+*.md
+!README.md
+
+# Debug files
+DebugController.java
+test-api.html
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test files
+src/test/
