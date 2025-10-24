@@ -53,6 +53,5 @@ Thumbs.db
 # Application specific
 application-local.properties
 application-dev.properties
-application-prod.properties
 application.properties
 /PROJEKT_GOTOWY.md

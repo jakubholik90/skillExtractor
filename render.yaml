@@ -2,7 +2,7 @@ services:
   # Spring Boot Application
   - type: web
     name: skillextractor
-    env: java
+    runtime: docker
     plan: free
     region: frankfurt  # Closest to Berlin
     buildCommand: mvn clean install -DskipTests
