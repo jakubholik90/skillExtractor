@@ -124,42 +124,57 @@ public class OpenAIService {
 
     private String buildQuizPrompt(String skillName, SkillCategory category, String exampleUsage) {
         return String.format("""
-            Create a quiz to assess knowledge of the following Java programming skill:
-            
-            SKILL: %s
-            CATEGORY: %s (%s)
-            EXAMPLE USAGE:
-            %s
-            
-            Generate 4 multiple-choice questions that test:
-            1. Basic understanding (1 question)
-            2. Practical application (2 questions)
-            3. Advanced/edge cases (1 question)
-            
-            REQUIREMENTS:
-            - 4 answer options (A, B, C, D) per question
-            - Only ONE correct answer per question
-            - Questions should be specific and practical
-            - Avoid trivial or overly theoretical questions
-            
-            OUTPUT FORMAT (JSON):
+        Create a quiz to assess knowledge of the following Java programming skill:
+        
+        SKILL: %s
+        CATEGORY: %s (%s)
+        EXAMPLE USAGE:
+        %s
+        
+        Generate 4 multiple-choice questions that test:
+        1. Basic understanding (1 question)
+        2. Practical application (2 questions)
+        3. Advanced/edge cases (1 question)
+        
+        REQUIREMENTS:
+        - 4 answer options (A, B, C, D) per question
+        - Only ONE correct answer per question
+        - Questions should be specific and practical
+        - Avoid trivial or overly theoretical questions
+        - When including code snippets in questions, wrap them in markdown code blocks using triple backticks
+        - Use ```java for Java code blocks
+        - Example: "What does this code do?\\n```java\\nSystem.out.println(\\"Hello\\");\\n```"
+        
+        OUTPUT FORMAT (JSON):
+        {
+          "questions": [
             {
-              "questions": [
-                {
-                  "number": 1,
-                  "text": "What is the primary purpose of Stream API?",
-                  "options": [
-                    "A) To handle file I/O operations",
-                    "B) To process collections functionally",
-                    "C) To manage threads",
-                    "D) To connect to databases"
-                  ],
-                  "correctAnswer": "B"
-                },
-                ...
-              ]
+              "number": 1,
+              "text": "What is the primary purpose of Stream API?",
+              "options": [
+                "A) To handle file I/O operations",
+                "B) To process collections functionally",
+                "C) To manage threads",
+                "D) To connect to databases"
+              ],
+              "correctAnswer": "B"
+            },
+            {
+              "number": 2,
+              "text": "What will this code output?\\n```java\\nList<String> names = Arrays.asList(\\"Alice\\", \\"Bob\\");\\nnames.stream().map(String::toUpperCase).forEach(System.out::println);\\n```",
+              "options": [
+                "A) alice bob",
+                "B) ALICE BOB",
+                "C) AliceBob",
+                "D) Compilation error"
+              ],
+              "correctAnswer": "B"
             }
-            """,
+          ]
+        }
+        
+        IMPORTANT: Return ONLY valid JSON. Do not include any text before or after the JSON.
+        """,
                 skillName,
                 category.getDisplayName(),
                 category.getDescription(),

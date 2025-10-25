@@ -98,3 +98,63 @@ body {
 footer {
     margin-top: auto;
 }
+
+/* ===== CODE BLOCK STYLING ===== */
+pre {
+    background-color: #0d1117;  /* Czarne tło */
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 16px 0;
+}
+
+code {
+    font-family: 'Courier New', Consolas, 'Monaco', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #ffffff;  /* Biała czcionka */
+}
+
+/* Inline code (single backticks) */
+:not(pre) > code {
+    background-color: #f6f8fa;
+    color: #24292f;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9em;
+    border: 1px solid #d0d7de;
+}
+
+/* Wymuś białą czcionkę w code blocks */
+pre code {
+    display: block;
+    color: #ffffff !important;
+}
+
+/* ===== QUIZ LOADING SPINNER ===== */
+.quiz-loading {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.quiz-loading .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3rem;
+}
+
+.quiz-loading-text {
+    margin-top: 16px;
+    font-size: 16px;
+    color: #666;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.quiz-loading-subtext {
+    margin-top: 8px;

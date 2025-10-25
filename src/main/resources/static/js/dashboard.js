@@ -81,7 +81,7 @@ async function uploadProject() {
             // Reset form
             document.getElementById('uploadForm').reset();
 
-            // ✅ Reload both projects AND skills
+            // Reload both projects AND skills
             console.log('Reloading projects and skills...');
             await Promise.all([
                 loadProjects(),
@@ -141,7 +141,7 @@ function displayProjects(projects) {
     `).join('');
 }
 
-// ✅ Delete project function
+// Delete project function
 async function deleteProject(projectId) {
     console.log('Delete project requested:', projectId);
 
@@ -249,17 +249,45 @@ async function openQuiz(skillId) {
     currentSkillId = skillId;
     console.log('Opening quiz for skill ID:', skillId);
 
+    // Pokaż modal z loader'em od razu
+    const modal = new bootstrap.Modal(document.getElementById('quizModal'));
+    modal.show();
+
+    // Znajdź nazwę skilla
+    const skill = currentSkills.find(s => s.id === skillId);
+    const skillName = skill ? skill.name : 'Skill';
+
+    document.getElementById('quizModalTitle').textContent = `Quiz: ${skillName}`;
+
+    // Pokaż loading state
+    const content = document.getElementById('quizContent');
+    content.innerHTML = `
+        <div class="quiz-loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="quiz-loading-text">Generating quiz questions...</div>
+            <div class="quiz-loading-subtext">This may take up to 30 seconds</div>
+        </div>
+    `;
+
     try {
+        // Wywołaj API w tle
         const quiz = await apiCall(`/quiz/generate/${skillId}`, 'POST');
         console.log('Quiz generated:', quiz);
         currentQuiz = quiz;
-        displayQuiz(quiz);
 
-        const modal = new bootstrap.Modal(document.getElementById('quizModal'));
-        modal.show();
+        // Wyświetl quiz po wygenerowaniu
+        displayQuiz(quiz);
     } catch (error) {
         console.error('Quiz generation failed:', error);
-        alert('Failed to generate quiz: ' + error.message);
+        content.innerHTML = `
+            <div class="alert alert-danger">
+                <h5>Failed to generate quiz</h5>
+                <p>${escapeHtml(error.message)}</p>
+                <button class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+            </div>
+        `;
     }
 }
 
@@ -269,22 +297,53 @@ function displayQuiz(quiz) {
     const content = document.getElementById('quizContent');
     content.innerHTML = `
         <form id="quizForm">
-            ${quiz.questions.map(q => `
-                <div class="quiz-question">
-                    <p><strong>Question ${q.number}:</strong> ${escapeHtml(q.text)}</p>
-                    ${q.options.map((option, idx) => `
-                        <div class="quiz-option">
-                            <input type="radio" name="q${q.number}" value="${option.charAt(0)}" id="q${q.number}_${idx}" required>
-                            <label for="q${q.number}_${idx}">${escapeHtml(option)}</label>
-                        </div>
-                    `).join('')}
-                </div>
-            `).join('')}
+            ${quiz.questions.map(q => {
+                // Przetwórz tekst pytania - zamień markdown code blocks
+                const questionText = formatQuestionText(q.text);
+
+                return `
+                    <div class="quiz-question">
+                        <p><strong>Question ${q.number}:</strong></p>
+                        <div class="question-content">${questionText}</div>
+                        ${q.options.map((option, idx) => `
+                            <div class="quiz-option">
+                                <input type="radio" name="q${q.number}" value="${option.charAt(0)}" id="q${q.number}_${idx}" required>
+                                <label for="q${q.number}_${idx}">${escapeHtml(option)}</label>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }).join('')}
             <button type="submit" class="btn btn-primary">Submit Quiz</button>
         </form>
     `;
 
+    // Zastosuj syntax highlighting do wszystkich code blocks
+    document.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+    });
+
     document.getElementById('quizForm').addEventListener('submit', submitQuiz);
+}
+
+// Formatuj tekst pytania - zamień markdown na HTML
+function formatQuestionText(text) {
+    if (!text) return '';
+
+    // Zamień triple backticks (```java ... ```) na <pre><code>
+    text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, function(match, lang, code) {
+        lang = lang || 'java';
+        const escapedCode = escapeHtml(code.trim());
+        return `<pre><code class="language-${lang}">${escapedCode}</code></pre>`;
+    });
+
+    // Zamień single backticks (`code`) na inline code
+    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Zamień newlines na <br> (ale nie wewnątrz code blocks)
+    text = text.replace(/\n/g, '<br>');
+
+    return text;
 }
 
 async function submitQuiz(e) {
@@ -326,7 +385,7 @@ function displayQuizResult(result) {
     `;
 }
 
-// ✅ Utility function to escape HTML and prevent XSS
+// Utility function to escape HTML and prevent XSS
 function escapeHtml(text) {
     if (!text) return '';
     const map = {
