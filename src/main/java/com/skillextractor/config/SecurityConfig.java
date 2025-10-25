@@ -26,20 +26,18 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // API Authentication
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
-                        .requestMatchers("/", "/index.html", "/login.html", "/register.html").permitAll()
-                        .requestMatchers("/css/**", "/js/**").permitAll()
 
-                        .requestMatchers("/**/*.html").permitAll()
-                        .requestMatchers("/**/*.css", "/**/*.js", "/**/*.png", "/**/*.jpg").permitAll()
+                        // Static Resources
+                        .requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/*.html").permitAll() // ✅ Tylko główny poziom
+                        .requestMatchers("/*.css", "/*.js", "/*.png", "/*.jpg").permitAll() // ✅ Poprawione
 
-                        // Tylko API wymaga autentykacji
-                        .requestMatchers("/api/**").authenticated()
-
-                        // Reszta - pozwól (tymczasowo)
-                        .anyRequest().permitAll() // ✅ ZMIEŃ z .authenticated() na .permitAll()
-                )
-                .httpBasic(Customizer.withDefaults());
+                        // Wszystko inne dostępne (tymczasowo)
+                        .anyRequest().permitAll()
+                );
 
         return http.build();
     }
