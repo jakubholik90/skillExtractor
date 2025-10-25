@@ -26,17 +26,24 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // API Authentication
+                        // Publiczne strony HTML i zasoby
+                        .requestMatchers("/", "/*.html").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+
+                        // Publiczne endpointy rejestracji i logowania
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
 
-                        // Static Resources
-                        .requestMatchers("/", "/index.html", "/login.html", "/register.html", "/dashboard.html").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
-                        .requestMatchers("/*.html").permitAll() // ✅ Tylko główny poziom
-                        .requestMatchers("/*.css", "/*.js", "/*.png", "/*.jpg").permitAll() // ✅ Poprawione
+                        // ✅ WSZYSTKIE INNE API wymagają logowania
+                        .requestMatchers("/api/**").authenticated()
 
-                        // Wszystko inne dostępne (tymczasowo)
+                        // Reszta publiczna
                         .anyRequest().permitAll()
+                )
+                .httpBasic(Customizer.withDefaults())
+                .formLogin(form -> form
+                        .loginPage("/login.html")
+                        .loginProcessingUrl("/api/auth/login")
+                        .permitAll()
                 );
 
         return http.build();
