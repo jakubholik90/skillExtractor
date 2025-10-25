@@ -24,14 +24,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Disable for API
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers("/", "/index.html", "/login.html", "/register.html").permitAll()
                         .requestMatchers("/css/**", "/js/**").permitAll()
-                        .anyRequest().authenticated()
+
+                        .requestMatchers("/**/*.html").permitAll()
+                        .requestMatchers("/**/*.css", "/**/*.js", "/**/*.png", "/**/*.jpg").permitAll()
+
+                        // Tylko API wymaga autentykacji
+                        .requestMatchers("/api/**").authenticated()
+
+                        // Reszta - pozwól (tymczasowo)
+                        .anyRequest().permitAll() // ✅ ZMIEŃ z .authenticated() na .permitAll()
                 )
-                .httpBasic(Customizer.withDefaults()); // ✅ Updated syntax - no deprecation warning
+                .httpBasic(Customizer.withDefaults());
 
         return http.build();
     }
