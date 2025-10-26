@@ -50,6 +50,15 @@
 
 ## Future Functionalities (Post-MVP)
 
+### To be updated:
+- Showing which answer in quiz is false
+- Showing a window with skills listed from project after analyzing
+- Filtering skills by project
+- Adjusting prompt to check if skill is already in database before adding new one
+- Showing examples of usage in code for each skill (extracted from project with file name)
+- Frameworks and libraries: skill name begining with framework name. be sure that quiz will only ask about this specific framework
+- Quiz should generate for example 20 questions by one prompt, cache them or save to db, and show only random 4 questions for every click
+
 ### Enhanced Analysis
 - Support for Python projects
 - GitHub repository integration (direct analysis)
