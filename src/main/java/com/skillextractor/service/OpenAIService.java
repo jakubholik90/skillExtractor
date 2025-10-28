@@ -19,7 +19,7 @@ public class OpenAIService {
 
     private final OpenAiService openAiService;
 
-    @Value("${openai.model:gpt-4}")
+    @Value("${openai.model:gpt-4-mini}")
     private String model;
 
     @Value("${openai.temperature:0.7}")
